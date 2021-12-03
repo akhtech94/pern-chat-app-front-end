@@ -1,32 +1,43 @@
-import React, {useState, useEffect} from 'react';
-import axios from 'axios';
+import React, { useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 
 import './App.css';
 
+const socket = io("http://localhost:8000");
+
 function App() {
-  const [message, setMessage] = useState("");
-  let socket;
+  const [messageInput, setMessageInput] = useState("");
+  const [messageList, setMessageList] = useState([]);
+  const socketRef = useRef(socket);
 
-  useEffect(() => {
-    socket = io("http://localhost:8000");
-  },[])
+    socketRef.current.on('connect', () => {
+      console.log(socketRef.current.id);
+    })
+    socketRef.current.on('message', message => {
+      console.log(messageList);
+      setMessageList([...messageList, message]);
+      console.log(messageList);
+    })
 
-  const handleSubmit = event => {
+  const handleSubmit = async event => {
     event.preventDefault();
-    console.log(message);
-    axios.post('http://localhost:8000', message);
+    socketRef.current.emit('message', messageInput);
+    setMessageList([...messageList, messageInput]);
+    console.log(messageList);
+    setMessageInput("");
   }
 
   const handleChange = event => {
-    setMessage(event.target.value);
+    setMessageInput(event.target.value);
   }
 
   return (
     <div className="App">
-      <div id="messages"></div>
+      <div className="messages">
+        {messageList.map((message, index) => <p key={index}>{message}</p>)}
+      </div>
       <form onSubmit={handleSubmit}>
-        <input type="text" value={message} onChange={handleChange}/>
+        <input id="MessageInput" type="text" value={messageInput} name="MessageInput" onChange={handleChange} />
         <button type="submit">Send</button>
       </form>
     </div>
